@@ -1,0 +1,22 @@
+apiVersion: templates.gatekeeper.sh/v1
+kind: ConstraintTemplate
+metadata:
+  name: imagedigestrequired
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  crd:
+    spec:
+      names:
+        kind: ImageDigestRequired
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package imagedigestrequired
+
+        violation[{"msg": msg}] {
+          input.review.kind.kind == "Pod"
+          container := input.review.object.spec.containers[_]
+          not contains(container.image, "@sha256:")
+          msg := sprintf("container <%v> is missing an image digest", [container.name])
+        }

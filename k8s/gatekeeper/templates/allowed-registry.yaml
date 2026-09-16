@@ -1,0 +1,33 @@
+apiVersion: templates.gatekeeper.sh/v1
+kind: ConstraintTemplate
+metadata:
+  name: allowedregistry
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  crd:
+    spec:
+      names:
+        kind: AllowedRegistry
+      validation:
+        # Declare parameters schema
+        openAPIV3Schema:
+          type: object
+          properties:
+            allowedPrefix:
+              type: string
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package allowedregistry
+
+        violation[{"msg": msg}] {
+          input.review.kind.kind == "Pod"
+          pod := input.review.object
+          container := pod.spec.containers[_]
+          not startswith(container.image, input.parameters.allowedPrefix)
+          msg := sprintf(
+            "Container <%v> in Pod <%v/%v> is using disallowed image <%v>. Allowed prefix: <%v>",
+            [container.name, pod.metadata.namespace, pod.metadata.name, container.image, input.parameters.allowedPrefix]
+          )
+        }

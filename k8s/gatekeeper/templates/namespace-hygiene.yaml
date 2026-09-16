@@ -1,0 +1,33 @@
+apiVersion: templates.gatekeeper.sh/v1
+kind: ConstraintTemplate
+metadata:
+  name: k8snamespacehygiene
+spec:
+  crd:
+    spec:
+      names:
+        kind: K8sNamespaceHygiene
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package k8snamespacehygiene
+
+        # -----------------------
+        # Rule 1: Require labels
+        # -----------------------
+        violation[{"msg": msg}] {
+          input.review.kind.kind == "Namespace"
+          required := {"project", "environment", "owner", "netpol"}
+          missing := {k | k := required[_]; not input.review.object.metadata.labels[k]}
+          count(missing) > 0
+          msg := sprintf("Namespace is missing required labels: %v", [missing])
+        }
+
+        # -----------------------
+        # Rule 2: Disallow default namespace for workloads
+        # -----------------------
+        violation[{"msg": msg}] {
+          ns := input.review.object.metadata.namespace
+          ns == "default"
+          msg := sprintf("Creating resources in namespace 'default' is not allowed", [])
+        }

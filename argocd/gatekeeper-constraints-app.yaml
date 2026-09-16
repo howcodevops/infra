@@ -1,0 +1,18 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: gatekeeper-constraint
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/howcodevops/demo-gitops
+    targetRevision: main
+    path: k8s/gatekeeper/constraints
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: ""
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

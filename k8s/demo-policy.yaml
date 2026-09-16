@@ -1,0 +1,28 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: demo-network-policy
+  namespace: frontend
+spec:
+  podSelector:
+    matchLabels:
+      app: demo
+  policyTypes:
+    - Ingress
+    - Egress
+
+  ingress:
+    - ports:
+        - protocol: TCP
+          port: 3000         # your app port
+      from:
+        - ipBlock:
+            cidr: 0.0.0.0/0 # allow all external users via LB
+
+  egress:
+    - ports:
+        - protocol: TCP
+          port: 27017        # MongoDB Atlas default port
+      to:
+        - ipBlock:
+            cidr: 0.0.0.0/0 # allow outgoing connection to Atlas

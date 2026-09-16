@@ -1,0 +1,38 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: fail-sa-privileged
+  namespace: frontend  
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  serviceAccountName: sa-privileged
+  automountServiceAccountToken: false
+  securityContext:
+    seccompProfile:
+      type: RuntimeDefault
+  containers:
+    - name: c1
+      image: gcr.io/distroless/static-debian12@sha256:8e0c74f4f52f34c2917bb8b51f7319a0ff6de2b0b34c30c7baf18a8d8d8d8a45
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        readOnlyRootFilesystem: true
+        allowPrivilegeEscalation: false
+      ports:
+        - containerPort: 8080
+      resources:
+        requests:
+          cpu: "50m"
+          memory: "64Mi"
+        limits:
+          cpu: "100m"
+          memory: "128Mi"
+      livenessProbe:
+        httpGet:
+          path: /
+          port: 8080
+      readinessProbe:
+        httpGet:
+          path: /
+          port: 8080

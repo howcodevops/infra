@@ -1,0 +1,11 @@
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: AllowedRegistry
+metadata:
+  name: enforceapprovedregistry
+spec:
+  match:
+    kinds:
+      - apiGroups: [""]
+        kinds: ["Pod"]
+  parameters:
+    allowedPrefix: "howco/demo@sha256:"

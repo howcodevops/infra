@@ -1,0 +1,89 @@
+apiVersion: templates.gatekeeper.sh/v1
+kind: ConstraintTemplate
+metadata:
+  name: k8spodhardening
+spec:
+  crd:
+    spec:
+      names:
+        kind: K8sPodHardening
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package k8spodhardening
+
+        # Helper: all containers (regular + init)
+        all_containers[c] {
+          c := input.review.object.spec.containers[_]
+        }
+        all_containers[c] {
+          c := input.review.object.spec.initContainers[_]
+        }
+
+        #
+        # 1. No privileged containers
+        #
+        violation[{"msg": msg}] {
+          c := all_containers[_]
+          c.securityContext.privileged == true
+          msg := sprintf("container <%v> is running privileged, which is not allowed", [c.name])
+        }
+
+        #
+        # 2. No hostNetwork / hostPID / hostIPC
+        #
+        violation[{"msg": msg}] {
+          input.review.object.spec.hostNetwork == true
+          msg := "Pod is using hostNetwork=true, which is not allowed"
+        }
+        violation[{"msg": msg}] {
+          input.review.object.spec.hostPID == true
+          msg := "Pod is using hostPID=true, which is not allowed"
+        }
+        violation[{"msg": msg}] {
+          input.review.object.spec.hostIPC == true
+          msg := "Pod is using hostIPC=true, which is not allowed"
+        }
+
+        #
+        # 3. Must run as non-root
+        #
+        violation[{"msg": msg}] {
+          c := all_containers[_]
+          not c.securityContext.runAsNonRoot
+          not c.securityContext.runAsUser
+          msg := sprintf("container <%v> must set runAsNonRoot=true or runAsUser != 0", [c.name])
+        }
+        violation[{"msg": msg}] {
+          c := all_containers[_]
+          c.securityContext.runAsUser == 0
+          msg := sprintf("container <%v> is explicitly running as root (UID 0)", [c.name])
+        }
+
+        #
+        # 4. Require seccompProfile = RuntimeDefault (pod-level)
+        #
+        violation[{"msg": msg}] {
+          not input.review.object.spec.securityContext.seccompProfile.type
+          msg := "Pod must set seccompProfile.type=RuntimeDefault"
+        }
+        violation[{"msg": msg}] {
+          input.review.object.spec.securityContext.seccompProfile.type != "RuntimeDefault"
+          msg := "Pod seccompProfile.type must be RuntimeDefault"
+        }
+
+        #
+        # 5. Require drop ALL capabilities + readOnlyRootFilesystem
+        #
+        # violation[{"msg": msg}] {
+        #   c := all_containers[_]
+        #   not contains(c.securityContext.capabilities.drop, "ALL")
+        #   msg := sprintf("container <%v> must drop ALL Linux capabilities", [c.name])
+        # }
+        
+
+        violation[{"msg": msg}] {
+          c := all_containers[_]
+          not c.securityContext.readOnlyRootFilesystem
+          msg := sprintf("container <%v> must set readOnlyRootFilesystem=true", [c.name])
+        }

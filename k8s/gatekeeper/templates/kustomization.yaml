@@ -1,0 +1,13 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Include all YAML manifests in this folder
+resources:
+  - t-req-image-digest.yaml
+  - k8snoimagelatest.yaml
+  - t-pod-hardening.yaml
+  - resource-hardening.yaml
+  - secrets-hardening.yaml
+  - namespace-hygiene.yaml
+  - service-account-security.yaml
+  - allowed-registry.yaml

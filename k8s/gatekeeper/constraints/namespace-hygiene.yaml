@@ -1,0 +1,13 @@
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: K8sNamespaceHygiene
+metadata:
+  name: require-namespace-hygiene
+spec:
+  match:
+    # Apply to Namespaces AND all resources in the cluster
+    kinds:
+      - apiGroups: [""]
+        kinds: ["Namespace"]
+      - apiGroups: ["*"]
+        kinds: ["*"]
+    excludedNamespaces: ["kyverno", "gatekeeper-system"]

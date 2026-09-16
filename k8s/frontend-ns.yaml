@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: frontend2
+  labels:
+    project: admin
+    environment: stage
+    owner: adam

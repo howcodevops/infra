@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: frontend
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+  labels:
+    project: client
+    environment: dev
+    owner: adam
+    netpol: deny-all-policy

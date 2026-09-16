@@ -1,0 +1,16 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Include all YAML manifests in this folder
+resources:
+  - pod-deny.yaml
+  - pod-fixed.yaml
+  - pod-fixed-configmap.yaml
+  - pod-fixed-service.yaml
+  - namespace-deny.yaml
+  - namespace-fixed.yaml
+  - deny-all-policy.yaml
+  - deny-sa.yaml
+  - fixed-sa.yaml
+  - privileged-sa.yaml
+  - deny-crb.yaml

@@ -1,0 +1,86 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo
+  namespace: frontend
+  labels:
+    app: demo
+    app.kubernetes.io/managed-by: gitops
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: demo }
+  template:
+    metadata:
+      labels: { app: demo }
+    spec:
+      serviceAccountName: frontend-sa
+      automountServiceAccountToken: false   # prevent unnecessary token mount
+      # Pod-level security context (applies to all containers in the pod)
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+      imagePullSecrets:
+        - name: dockerhub-cred
+      containers:
+        - name: demo
+          image: howco/demo@sha256:2553698a91c32b96e157347f41f09df4a612e5c2fb1a94acefaee22976584f5e
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3000
+          # env:
+          #   - name: MONGODB_URI
+          #     valueFrom:
+          #       secretKeyRef:
+          #         name: frontend-secret
+          #         key: MONGODB_URI
+          # # NO env MONGODB_URI here (remove the valueFrom secretKeyRef)
+          volumeMounts:
+            - name: mongo-secret
+              mountPath: /var/run/secrets/mongodb
+              readOnly: true        
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 30   # wait before first probe
+            periodSeconds: 10         # check every 10s
+            timeoutSeconds: 2
+            failureThreshold: 3       # restart after 3 failed checks
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 10   # app may be ready earlier than liveness
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 3
+          # container-level security context (applies to all containers in the pod)   
+          securityContext:
+            runAsUser: 10001
+            runAsGroup: 10001
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            privileged: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+            seccompProfile:
+              type: RuntimeDefault
+      volumes:
+          - name: mongo-secret
+            secret:
+              secretName: frontend-secret
+              defaultMode: 0400         # octal mode — files will be owner-readable only
+              items:
+                - key: MONGODB_URI
+                  path: mongodb_uri   

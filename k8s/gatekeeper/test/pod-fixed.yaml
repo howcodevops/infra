@@ -1,0 +1,99 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-super-good
+  namespace: frontend
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  serviceAccountName: sa-safe
+  automountServiceAccountToken: false   # explicit, allowed
+  securityContext:
+    seccompProfile:
+      type: RuntimeDefault
+  containers:
+    - name: c1
+      image: nginx@sha256:3d8957cb61d0223de2ab1aa2ec91d29796eb82a81cdcc1e968c090c29606d648
+      command: ["nginx", "-g", "daemon off;", "-c", "/etc/nginx/nginx.conf"] 
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        privileged: false
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        capabilities:
+          drop: ["ALL"]  # ✅ Dropping all caps
+      ports:
+        - containerPort: 8080
+      volumeMounts:
+        - name: cache
+          mountPath: /var/cache/nginx
+        - name: custom-nginx-conf
+          mountPath: /etc/nginx/conf.d
+        - name: run
+          mountPath: /run   # ✅ Fix: writable dir for nginx.pid
+      resources:
+        requests:
+          cpu: "50m"
+          memory: "64Mi"
+        limits:
+          cpu: "100m"
+          memory: "128Mi"
+      livenessProbe:
+        httpGet:
+          path: /
+          port: 8080
+      readinessProbe:
+        httpGet:
+          path: /
+          port: 8080
+  volumes:
+    - name: cache
+      emptyDir: {}
+    - name: custom-nginx-conf
+      configMap:
+        name: nginx-conf
+    - name: run
+      emptyDir: {}   # ✅ writable /run
+
+---
+# ✅ Pass: secretRef (correct usage)
+# apiVersion: v1
+# kind: Pod
+# metadata:
+#   name: test-secret-good
+#   namespace: frontend
+# spec:
+#   securityContext:
+#     seccompProfile:
+#       type: RuntimeDefault
+#   containers:
+#     - name: c1
+#       image: gcr.io/distroless/static-debian12@sha256:8e0c74f4f52f34c2917bb8b51f7319a0ff6de2b0b34c30c7baf18a8d8d8d8a45
+#       securityContext:
+#         runAsNonRoot: true
+#         runAsUser: 1000
+#         privileged: false
+#         allowPrivilegeEscalation: false
+#         readOnlyRootFilesystem: true
+#         capabilities:
+#           drop: ["ALL"]  # ✅ Dropping all caps
+#       envFrom:
+#         - secretRef:
+#             name: my-k8s-secret
+#       resources:
+#         requests:
+#           cpu: "50m"
+#           memory: "64Mi"
+#         limits:
+#           cpu: "100m"
+#           memory: "128Mi"
+#         livenessProbe:
+#           httpGet:
+#             path: /
+#             port: 8080
+#         readinessProbe:
+#           httpGet:
+#             path: /
+#             port: 8080
+

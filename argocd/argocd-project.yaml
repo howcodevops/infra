@@ -1,0 +1,18 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: demo-proj
+  namespace: argocd
+spec:
+  description: "A sample demo project with cluster resource permissions for Gatekeeper"
+  # Allow all cluster-scoped resources (ConstraintTemplates, Constraints, etc.)
+  clusterResourceWhitelist:
+    - group: "*"
+      kind: "*"
+  # Allow deployments to any cluster and any namespace
+  destinations:
+    - server: "*"
+      namespace: "*"
+  # Allow apps from any repository
+  sourceRepos:
+    - "*"

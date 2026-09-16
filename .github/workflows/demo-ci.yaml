@@ -1,0 +1,89 @@
+# name: Security Checks
+
+# on:
+#   pull_request:
+#     branches:
+#       - main
+#   push:
+#     branches:
+#       - main
+
+# jobs:
+#   checkov:
+#     runs-on: ubuntu-latest
+#     steps:
+#       - name: Checkout Git repository
+#         uses: actions/checkout@v3
+
+#       - name: Set up Python
+#         uses: actions/setup-python@v4
+#         with:
+#           python-version: 3.12  # Checkov requires Python 3.7+
+
+#       - name: Install Checkov
+#         run: |
+#           python -m pip install --upgrade pip
+#           pip install checkov
+
+#       - name: Run Checkov on Kubernetes manifests
+#         run: |
+#           checkov -d k8s/ -o json > checkov-report.json
+          
+#       - name: Upload Checkov report
+#         if: always()
+#         uses: actions/upload-artifact@v4
+#         with:
+#           name: checkov-report
+#           path: checkov-report.json
+
+  # verify-signatures:
+  #   runs-on: ubuntu-latest
+  #   needs: checkov   # ensure Checkov runs first
+  #   steps:
+  #     - uses: actions/checkout@v3
+
+  #     - name: Install tools
+  #       run: |
+  #         sudo apt-get update
+  #         sudo apt-get install -y jq
+  #         curl -sL https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -o /usr/local/bin/yq
+  #         chmod +x /usr/local/bin/yq
+  #         curl -LO https://github.com/sigstore/cosign/releases/latest/download/cosign-linux-amd64
+  #         sudo mv cosign-linux-amd64 /usr/local/bin/cosign
+  #         sudo chmod +x /usr/local/bin/cosign
+
+      # - name: Verify images referenced by digest
+      #   env:
+      #     COSIGN_PUBLIC_KEY: ${{ secrets.COSIGN_PUBLIC_KEY }}
+      #     DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+      #     DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+      #   run: |
+      #     set -euo pipefail
+      #     echo "$COSIGN_PUBLIC_KEY" > cosign.pub
+
+      #     # Find all images in manifests
+      #     images=$(yq eval '.. | select(has("image")) | .image' k8s/*.yaml | sort -u)
+
+      #     if [ -z "$images" ]; then
+      #       echo "No images found in k8s/*.yaml"
+      #       exit 0
+      #     fi
+
+      #     export COSIGN_EXPERIMENTAL_DISABLE_REKOR=true
+
+      #     if [ -n "${DOCKER_USERNAME:-}" ]; then
+      #       echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+      #     fi
+
+      #     for img in $images; do
+      #       echo "Checking $img"
+      #       if [[ "$img" != *@sha256:* ]]; then
+      #         echo "❌ ERROR: image is not pinned by digest: $img" >&2
+      #         exit 1
+      #       fi
+
+      #       cosign verify --key cosign.pub "$img"
+      #       echo "✅ Verified $img"
+      #     done
+
+

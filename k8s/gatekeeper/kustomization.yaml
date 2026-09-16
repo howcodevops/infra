@@ -1,0 +1,8 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Include all YAML manifests in this folder
+resources:
+  # - templates
+  # - constraints
+  - test

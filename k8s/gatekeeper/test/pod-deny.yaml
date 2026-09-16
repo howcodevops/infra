@@ -1,0 +1,420 @@
+# ❌ Violates "no privileged" (privileged=true)
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-privileged
+  namespace: frontend
+spec:
+  containers:
+    - name: c1
+      image: nginx@sha256:3d8957cb61d0223de2ab1aa2ec91d29796eb82a81cdcc1e968c090c29606d648
+      securityContext:
+        privileged: true  # <-- ❌ Not allowed
+
+---
+# ❌ Violates "no hostNetwork/hostPID/hostIPC"
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-hostnetwork
+  namespace: frontend
+spec:
+  hostNetwork: true   # <-- ❌ Not allowed
+  containers:
+    - name: c1
+      image: nginx@sha256:3d8957cb61d0223de2ab1aa2ec91d29796eb82a81cdcc1e968c090c29606d648
+
+---
+# ❌ Violates "must run as non-root" (UID 0)
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-rootuser
+  namespace: frontend
+spec:
+  containers:
+    - name: c1
+      image: nginx@sha256:3d8957cb61d0223de2ab1aa2ec91d29796eb82a81cdcc1e968c090c29606d648
+      securityContext:
+        runAsUser: 0  # <-- ❌ Explicit root UID
+
+---
+# ❌ Violates "require seccompProfile=RuntimeDefault"
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-seccomp
+  namespace: frontend
+spec:
+  securityContext:
+    seccompProfile:
+      type: Unconfined  # <-- ❌ Must be RuntimeDefault
+  containers:
+    - name: c1
+      image: nginx@sha256:3d8957cb61d0223de2ab1aa2ec91d29796eb82a81cdcc1e968c090c29606d648
+
+---
+# ❌ Violates "must drop ALL caps + readOnlyRootFilesystem"
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-caps-rootfs
+  namespace: frontend
+spec:
+  containers:
+    - name: c1
+      image: nginx@sha256:3d8957cb61d0223de2ab1aa2ec91d29796eb82a81cdcc1e968c090c29606d648
+      securityContext:
+        capabilities:
+          drop: ["NET_RAW"]  # <-- ❌ Needs to be ["ALL"]
+        readOnlyRootFilesystem: false  # <-- ❌ Must be true
+---
+# ❌ Violates "image digest ande letest"
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-image-digest-latest
+  namespace: frontend
+spec:
+  securityContext:
+    seccompProfile:
+      type: RuntimeDefault  
+  containers:
+    - name: c1
+      image: nginx:1.25
+      securityContext:
+        runAsNonRoot: true      
+        runAsUser: 1000            
+        privileged: false       
+        readOnlyRootFilesystem: true 
+        capabilities:
+          drop: ["ALL"]            
+---
+# ❌ Missing CPU request
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-no-cpu-request
+  namespace: frontend
+spec:
+  containers:
+    - name: c1
+      image: nginx@sha256:3d8957cb61d0223de2ab1aa2ec91d29796eb82a81cdcc1e968c090c29606d648
+      resources:
+        requests:
+          memory: "64Mi"
+        limits:
+          cpu: "100m"
+          memory: "128Mi"
+      livenessProbe:
+        httpGet:
+          path: /
+          port: 80
+      readinessProbe:
+        httpGet:
+          path: /
+          port: 80
+
+---
+# ❌ Missing memory request
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-no-mem-request
+  namespace: frontend
+spec:
+  containers:
+    - name: c1
+      image: nginx@sha256:3d8957cb61d0223de2ab1aa2ec91d29796eb82a81cdcc1e968c090c29606d648
+      resources:
+        requests:
+          cpu: "50m"
+        limits:
+          cpu: "100m"
+          memory: "128Mi"
+      livenessProbe:
+        httpGet:
+          path: /
+          port: 80
+      readinessProbe:
+        httpGet:
+          path: /
+          port: 80
+
+---
+# ❌ Missing CPU limit
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-no-cpu-limit
+  namespace: frontend
+spec:
+  containers:
+    - name: c1
+      image: nginx@sha256:3d8957cb61d0223de2ab1aa2ec91d29796eb82a81cdcc1e968c090c29606d648
+      resources:
+        requests:
+          cpu: "50m"
+          memory: "64Mi"
+        limits:
+          memory: "128Mi"
+      livenessProbe:
+        httpGet:
+          path: /
+          port: 80
+      readinessProbe:
+        httpGet:
+          path: /
+          port: 80
+
+---
+# ❌ Missing memory limit
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-no-mem-limit
+  namespace: frontend
+spec:
+  containers:
+    - name: c1
+      image: nginx@sha256:3d8957cb61d0223de2ab1aa2ec91d29796eb82a81cdcc1e968c090c29606d648
+      resources:
+        requests:
+          cpu: "50m"
+          memory: "64Mi"
+        limits:
+          cpu: "100m"
+      livenessProbe:
+        httpGet:
+          path: /
+          port: 80
+      readinessProbe:
+        httpGet:
+          path: /
+          port: 80
+
+---
+# ❌ Missing liveness probe
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-no-liveness
+  namespace: frontend
+spec:
+  containers:
+    - name: c1
+      image: nginx@sha256:3d8957cb61d0223de2ab1aa2ec91d29796eb82a81cdcc1e968c090c29606d648
+      resources:
+        requests:
+          cpu: "50m"
+          memory: "64Mi"
+        limits:
+          cpu: "100m"
+          memory: "128Mi"
+      readinessProbe:
+        httpGet:
+          path: /
+          port: 80
+
+---
+# ❌ Missing readiness probe
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-no-readiness
+  namespace: frontend
+spec:
+  containers:
+    - name: c1
+      image: nginx@sha256:3d8957cb61d0223de2ab1aa2ec91d29796eb82a81cdcc1e968c090c29606d648
+      resources:
+        requests:
+          cpu: "50m"
+          memory: "64Mi"
+        limits:
+          cpu: "100m"
+          memory: "128Mi"
+      livenessProbe:
+        httpGet:
+          path: /
+          port: 80
+
+---
+# ❌ Fails: plaintext password
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-secret-bad1
+  namespace: frontend
+spec:
+  containers:
+    - name: c1
+      image: nginx
+      env:
+        - name: PASSWORD
+          value: "supersecret123"
+
+---
+# ❌ Fails: envFrom ConfigMap (not secretRef)
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-secret-bad2
+  namespace: frontend
+spec:
+  containers:
+    - name: c1
+      image: nginx
+      envFrom:
+        - configMapRef:
+            name: some-configmap
+
+---
+# ❌ Violates "no default namespace" rule
+apiVersion: v1
+kind: Pod
+metadata:
+  name: fail-nginx
+  namespace: default  
+spec:
+  containers:
+    - name: c1
+      image: gcr.io/distroless/static-debian12@sha256:8e0c74f4f52f34c2917bb8b51f7319a0ff6de2b0b34c30c7baf18a8d8d8d8a45
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        readOnlyRootFilesystem: true
+        allowPrivilegeEscalation: false
+      ports:
+        - containerPort: 8080
+      resources:
+        requests:
+          cpu: "50m"
+          memory: "64Mi"
+        limits:
+          cpu: "100m"
+          memory: "128Mi"
+      livenessProbe:
+        httpGet:
+          path: /
+          port: 8080
+      readinessProbe:
+        httpGet:
+          path: /
+          port: 8080
+
+---
+# ❌ Violates "no default namespace" rule
+apiVersion: v1
+kind: Pod
+metadata:
+  name: fail-networkpolicy
+  namespace: frontend2  
+spec:
+  securityContext:
+    seccompProfile:
+      type: RuntimeDefault
+  containers:
+    - name: c1
+      image: gcr.io/distroless/static-debian12@sha256:8e0c74f4f52f34c2917bb8b51f7319a0ff6de2b0b34c30c7baf18a8d8d8d8a45
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        readOnlyRootFilesystem: true
+        allowPrivilegeEscalation: false
+      ports:
+        - containerPort: 8080
+      resources:
+        requests:
+          cpu: "50m"
+          memory: "64Mi"
+        limits:
+          cpu: "100m"
+          memory: "128Mi"
+      livenessProbe:
+        httpGet:
+          path: /
+          port: 8080
+      readinessProbe:
+        httpGet:
+          path: /
+          port: 8080
+---
+# ❌ Failing Pod 1 — sets pod automount true (should be denied)
+apiVersion: v1
+kind: Pod
+metadata:
+  name: fail-pod-automount 
+  namespace: frontend  
+spec:
+  serviceAccountName: sa-safe
+  automountServiceAccountToken: true   # ❌ disallowed by policy
+  securityContext:
+    seccompProfile:
+      type: RuntimeDefault
+  containers:
+    - name: c1
+      image: gcr.io/distroless/static-debian12@sha256:8e0c74f4f52f34c2917bb8b51f7319a0ff6de2b0b34c30c7baf18a8d8d8d8a45
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        readOnlyRootFilesystem: true
+        allowPrivilegeEscalation: false
+      ports:
+        - containerPort: 8080
+      resources:
+        requests:
+          cpu: "50m"
+          memory: "64Mi"
+        limits:
+          cpu: "100m"
+          memory: "128Mi"
+      livenessProbe:
+        httpGet:
+          path: /
+          port: 8080
+      readinessProbe:
+        httpGet:
+          path: /
+          port: 8080
+
+---
+# ❌ Violates "failing Pod 2 — uses privileged SA bound to cluster-admin (should be denied) " rule
+apiVersion: v1
+kind: Pod
+metadata:
+  name: fail-sa-privileged
+  namespace: frontend  
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  serviceAccountName: sa-privileged
+  automountServiceAccountToken: false
+  securityContext:
+    seccompProfile:
+      type: RuntimeDefault
+  containers:
+    - name: c1
+      image: gcr.io/distroless/static-debian12@sha256:8e0c74f4f52f34c2917bb8b51f7319a0ff6de2b0b34c30c7baf18a8d8d8d8a45
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        readOnlyRootFilesystem: true
+        allowPrivilegeEscalation: false
+      ports:
+        - containerPort: 8080
+      resources:
+        requests:
+          cpu: "50m"
+          memory: "64Mi"
+        limits:
+          cpu: "100m"
+          memory: "128Mi"
+      livenessProbe:
+        httpGet:
+          path: /
+          port: 8080
+      readinessProbe:
+        httpGet:
+          path: /
+          port: 8080
