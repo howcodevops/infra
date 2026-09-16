@@ -6,7 +6,7 @@ metadata:
 spec:
   project: demo-proj
   source:
-    repoURL: https://github.com/howcodevops/demo-gitops
+    repoURL: https://github.com/howcodevops/infra
     targetRevision: HEAD
     path: k8s
     kustomize: {}

@@ -6,7 +6,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/howcodevops/demo-gitops
+    repoURL: https://github.com/howcodevops/infra
     targetRevision: main
     path: k8s/gatekeeper/constraints
   destination:
