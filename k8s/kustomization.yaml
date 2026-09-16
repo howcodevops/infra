@@ -12,4 +12,4 @@ resources:
 
 # Include policy folders (each has its own kustomization.yaml)
   #- gatekeeper
-  - kyverno/baseline
+  #- kyverno/baseline
