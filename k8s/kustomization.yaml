@@ -11,5 +11,5 @@ resources:
   - deny-all-policy2.yaml
 
 # Include policy folders (each has its own kustomization.yaml)
-  - gatekeeper
+  #- gatekeeper
   - baseline
